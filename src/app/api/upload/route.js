@@ -41,7 +41,7 @@ async function analyzeResume(markdown) {
 		const response = await axios.post(
 			"https://api.openai.com/v1/chat/completions",
 			{
-				model: "gpt-4",
+				model: "gpt-4o-mini",
 				messages: [
 					{
 						role: "user",
@@ -122,7 +122,7 @@ async function checkJobFit(resumeText, jobDescription) {
 		const response = await axios.post(
 			"https://api.openai.com/v1/chat/completions",
 			{
-				model: "gpt-4",
+				model: "gpt-4o-mini",
 				messages: [
 					{
 						role: "user",

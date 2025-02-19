@@ -160,6 +160,15 @@ export default function Home() {
 			</header>
 
 			<main className='max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10'>
+				<div className='w-full flex justify-center my-4'>
+					<a
+						href='https://buymeacoffee.com/aahiknsv'
+						target='_blank'
+						rel='noopener noreferrer'
+						className='px-4 py-2 text-sm font-medium rounded-full border border-gray-500 hover:border-yellow-400 text-gray-300 hover:text-yellow-300 transition flex items-center space-x-2'>
+						Little support to keep this app free ♥️
+					</a>
+				</div>
 				{activeTabIndex === 0 && (
 					<motion.div
 						initial={{ opacity: 0, y: 20 }}
