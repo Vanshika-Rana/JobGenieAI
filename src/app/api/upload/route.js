@@ -6,13 +6,13 @@ import axios from "axios";
 import path from "path";
 import os from "os";
 
-
 async function parsePDF(fileBuffer) {
 	try {
 		if (!process.env.LLAMA_CLOUD_API_KEY) {
 			throw new Error("LlamaParse API Key is missing.");
 		}
 
+	
 		const tempFilePath = path.join(os.tmpdir(), `resume-${Date.now()}.pdf`);
 		await writeFile(tempFilePath, Buffer.from(fileBuffer));
 
@@ -30,7 +30,6 @@ async function parsePDF(fileBuffer) {
 		throw new Error("Failed to process resume.");
 	}
 }
-
 
 async function analyzeResume(markdown) {
 	try {
@@ -52,6 +51,8 @@ async function analyzeResume(markdown) {
 						${markdown}`,
 					},
 				],
+				temperature: 0.3,
+				max_tokens: 100,
 			},
 			{ headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }
 		);
@@ -65,7 +66,6 @@ async function analyzeResume(markdown) {
 		throw new Error("Failed to analyze resume.");
 	}
 }
-
 
 async function fetchJobsForRoles(jobRoles, locations, workFromHome) {
 	if (!process.env.SERP_API_KEY) {
@@ -112,7 +112,6 @@ async function fetchJobsForRoles(jobRoles, locations, workFromHome) {
 	}
 }
 
-
 async function checkJobFit(resumeText, jobDescription) {
 	try {
 		if (!process.env.OPENAI_API_KEY) {
@@ -126,35 +125,48 @@ async function checkJobFit(resumeText, jobDescription) {
 				messages: [
 					{
 						role: "user",
-						content: `Analyze this resume against the job description and return a JSON response.
-						
-						### Response Format
-						{"suitability": "85%", "improvements": ["Gain experience in React.js"], "coverLetterSuggestions": ["Highlight JavaScript expertise"]}
+						content: `Analyze the resume against the job description and return a JSON response.
 
-						### Resume
+						### **Response Format (Strict JSON)**
+						\`\`\`json
+						{"suitability": "85%", "improvements": ["Gain experience in React.js"], "coverLetterSuggestions": ["Highlight JavaScript expertise"]}
+						\`\`\`
+
+						### **Resume**
 						${resumeText}
 
-						### Job Description
-						${jobDescription}`,
+						### **Job Description**
+						${jobDescription}
+						`,
 					},
 				],
+				temperature: 0.3,
+				max_tokens: 200,
 			},
 			{ headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }
 		);
 
-		return JSON.parse(response.data.choices[0]?.message?.content || "{}");
+
+		let aiResponse = response.data.choices[0]?.message?.content || "{}";
+		aiResponse = aiResponse.replace(/```json|```/g, "").trim();
+
+		try {
+			return JSON.parse(aiResponse);
+		} catch (parseError) {
+			console.error("JSON Parse Error:", parseError.message, "Raw AI Response:", aiResponse);
+			throw new Error("AI response is not in valid JSON format.");
+		}
 	} catch (error) {
 		console.error("Error analyzing job fit:", error.message);
 		throw new Error("Failed to analyze job fit.");
 	}
 }
 
-
 export async function POST(req) {
 	try {
 		const formData = await req.formData();
 		const fileBuffer = Buffer.from(await formData.get("file").arrayBuffer());
-		const locations = formData.get("locations")?.split(",").map((loc) => loc.trim()) || [];
+		const locations = formData.get("locations")?.toString().split(",").map((loc) => loc.trim()) || [];
 		const workFromHome = formData.get("workFromHome") === "true";
 
 		const markdownText = await parsePDF(fileBuffer);
@@ -167,7 +179,6 @@ export async function POST(req) {
 		return NextResponse.json({ error: error.message }, { status: 500 });
 	}
 }
-
 
 export async function GET(req) {
 	try {
